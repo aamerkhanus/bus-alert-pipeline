@@ -19,7 +19,7 @@ jobs:
         if: ${{ secrets.AWS_ACCESS_KEY_ID == '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/github-actions-bus-alerts
+          role-to-assume: arn:aws:iam::314119347236:role/github-actions-bus-alerts
           aws-region: us-east-1
 
       # --- AWS auth: use Access Keys if provided ---
