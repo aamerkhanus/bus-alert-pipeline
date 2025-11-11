@@ -1,0 +1,14 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+terraform.tfvars
+terraform.tfvars.json
+build/
+function.zip
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
