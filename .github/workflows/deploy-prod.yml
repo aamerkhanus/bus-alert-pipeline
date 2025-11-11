@@ -1,28 +1,27 @@
-name: Promote to Prod
-
+name: Deploy PROD
 on:
-  workflow_dispatch: {}
-
-permissions:
-  id-token: write
-  contents: read
+  workflow_dispatch:  # run by hand from the Actions tab
 
 jobs:
-  deploy-prod:
+  deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: prod   # protect this environment in repo settings
+    permissions:
+      id-token: write   # needed for OIDC
+      contents: read
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # --- Prefer OIDC (no keys). Run this when no access key is set ---
       - name: Configure AWS (OIDC)
-        if: ${{ !secrets.AWS_ACCESS_KEY_ID }}
+        if: ${{ secrets.AWS_ACCESS_KEY_ID == '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/github-actions-bus-alerts
           aws-region: us-east-1
 
+      # --- Fall back to static access keys only if you provided them ---
       - name: Configure AWS (Access Keys)
         if: ${{ secrets.AWS_ACCESS_KEY_ID != '' }}
         uses: aws-actions/configure-aws-credentials@v4
@@ -31,11 +30,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - name: Verify identity
+        run: aws sts get-caller-identity
 
-      - name: Terraform apply (prod)
-        working-directory: infra
+      # TODO: add your real prod steps here (SAM/Terraform/CLI)
+      # - name: Terraform Apply (prod)
+      #   run: |
+      #     terraform -chdir=infra init -upgrade
+      #     terraform -chdir=infra apply -auto-approve
         run: |
           terraform init -input=false
           terraform workspace select prod || terraform workspace new prod
