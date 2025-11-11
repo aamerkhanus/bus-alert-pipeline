@@ -1,30 +1,29 @@
-name: Deploy to Dev
-
+name: Deploy Dev
 on:
   push:
-    branches: [ "main" ]
-  workflow_dispatch: {}
-
-permissions:
-  id-token: write
-  contents: read
+    branches: [ main ]
+  workflow_dispatch:  # allows you to run manually from Actions tab
 
 jobs:
-  deploy-dev:
+  deploy:
     runs-on: ubuntu-latest
-    environment: dev
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # --- AWS auth: use OIDC if no keys are provided ---
       - name: Configure AWS (OIDC)
-        if: ${{ !secrets.AWS_ACCESS_KEY_ID }}
+        if: ${{ secrets.AWS_ACCESS_KEY_ID == '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume:arn:aws:iam::123456789012:role/github-actions-bus-alerts
+          role-to-assume: arn:aws:iam::314119347236:role/github-actions-bus-alerts
           aws-region: us-east-1
 
+      # --- AWS auth: use Access Keys if provided ---
       - name: Configure AWS (Access Keys)
         if: ${{ secrets.AWS_ACCESS_KEY_ID != '' }}
         uses: aws-actions/configure-aws-credentials@v4
@@ -33,12 +32,10 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
 
-      - name: Terraform apply (dev)
-        working-directory: infra
+      # --- Example deploy command (replace with real command) ---
+      - name: Deploy Lambda or Terraform
         run: |
-          terraform init -input=false
-          terraform workspace select dev || terraform workspace new dev
-          terraform apply -auto-approve -input=false
+          echo "Deploying to AWS DEV environment..."
