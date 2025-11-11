@@ -1,0 +1,71 @@
+name: PR CI (Lint + Terraform Plan)
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  id-token: write   # needed for OIDC (safe if unused)
+  contents: read
+
+jobs:
+  pr-ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # --- AWS auth: use keys if provided; otherwise OIDC role ---
+      - name: Configure AWS (OIDC)
+        if: ${{ !secrets.AWS_ACCESS_KEY_ID }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/github-actions-bus-alerts
+          aws-region: us-east-1
+
+      - name: Configure AWS (Access Keys)
+        if: ${{ secrets.AWS_ACCESS_KEY_ID != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with: { python-version: '3.x' }
+
+      - name: Install linters/tests
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff flake8 pytest
+
+      - name: Ruff / Flake8
+        run: |
+          ruff --output-format=github lambda
+          flake8 lambda
+
+      - name: (Optional) pytest
+        run: pytest || true
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform fmt & validate
+        working-directory: infra
+        run: |
+          terraform fmt -check -recursive
+          terraform init -input=false
+          terraform workspace select dev || terraform workspace new dev
+          terraform validate
+
+      - name: Terraform plan (dev)
+        working-directory: infra
+        run: terraform plan -input=false -no-color -out=tfplan
+
+      - name: Upload plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: infra/tfplan
