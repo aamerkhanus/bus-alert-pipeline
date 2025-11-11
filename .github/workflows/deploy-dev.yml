@@ -12,11 +12,11 @@ jobs:
       contents: read
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       # --- AWS auth: use OIDC if no keys are provided ---
       - name: Configure AWS (OIDC)
+<<<<<<< HEAD
         if: ${{ secrets.AWS_ACCESS_KEY_ID == '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -30,6 +30,11 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+=======
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::314119347236:role/github-actions-bus-alerts
+>>>>>>> 996cd59 (ci: fix workflows to use OIDC only (no secrets in if:))
           aws-region: us-east-1
 
       - name: Verify AWS identity
