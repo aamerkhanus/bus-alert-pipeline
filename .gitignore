@@ -1,14 +1,17 @@
+# Terraform
 .terraform/
 *.tfstate
-*.tfstate.*
-crash.log
-override.tf
-override.tf.json
-terraform.tfvars
-terraform.tfvars.json
-build/
-function.zip
-__pycache__/
+*.tfstate.backup
+*.tfplan
+
+# Python
+_pycache_/
 *.pyc
 .venv/
+
+# Builds/archives
+build/
+lambda/function.zip
+
+# macOS
 .DS_Store
