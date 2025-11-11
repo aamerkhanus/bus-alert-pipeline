@@ -1,48 +1,30 @@
-name: Deploy PROD
+name: Promote to Prod
+
 on:
-  workflow_dispatch:  # run by hand from the Actions tab
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
-  deploy:
+  deploy_prod:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write   # needed for OIDC
-      contents: read
-
+    environment: prod   # protect this env in repo Settings -> Environments
     steps:
       - uses: actions/checkout@v4
 
-      # --- Prefer OIDC (no keys). Run this when no access key is set ---
       - name: Configure AWS (OIDC)
-<<<<<<< HEAD
-        if: ${{ secrets.AWS_ACCESS_KEY_ID == '' }}
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/github-actions-bus-alerts
-          aws-region: us-east-1
-
-      # --- Fall back to static access keys only if you provided them ---
-      - name: Configure AWS (Access Keys)
-        if: ${{ secrets.AWS_ACCESS_KEY_ID != '' }}
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-=======
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::314119347236:role/github-actions-bus-alerts
->>>>>>> 996cd59 (ci: fix workflows to use OIDC only (no secrets in if:))
           aws-region: us-east-1
 
-      - name: Verify identity
-        run: aws sts get-caller-identity
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
-      # TODO: add your real prod steps here (SAM/Terraform/CLI)
-      # - name: Terraform Apply (prod)
-      #   run: |
-      #     terraform -chdir=infra init -upgrade
-      #     terraform -chdir=infra apply -auto-approve
+      - name: Terraform apply (prod)
+        working-directory: infra
         run: |
           terraform init -input=false
           terraform workspace select prod || terraform workspace new prod
