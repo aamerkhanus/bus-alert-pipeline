@@ -1,5 +1,7 @@
 cat > README.md <<'MD'
 # Bus Alerts — Serverless ETLA (Deliverables 1–4 + Docs)
+![CI Smoke Test](https://github.com/aamerkhanus/bus-alerts/actions/workflows/ci-smoke-test.yml/badge.svg)
+![Deploy Dev](https://github.com/aamerkhanus/bus-alerts/actions/workflows/deploy-dev.yml/badge.svg)
 
 A serverless pipeline that ingests school bus breakdown/delay events via a protected HTTP API, validates/enriches them in Lambda, stores raw payloads in S3, writes transformed records to DynamoDB, and emits a custom CloudWatch metric for high-priority incidents. Alarms notify via SNS.
 
