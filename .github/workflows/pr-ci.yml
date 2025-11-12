@@ -21,7 +21,7 @@ jobs:
 
       - name: Lint lambda
         run: |
-          ruff lambda
+          ruff checklambda
           flake8 lambda
 
       - name: Setup Terraform
