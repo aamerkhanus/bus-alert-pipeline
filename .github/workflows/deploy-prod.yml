@@ -1,41 +1,32 @@
-cat > .github/workflows/deploy-prod.yml <<'YAML'
-name: Promote to Prod
+name: deploy_prod
 
 on:
-  workflow_dispatch: {}
-
-permissions:
-  id-token: write
-  contents: read
+  workflow_dispatch:
 
 jobs:
   deploy_prod:
     runs-on: ubuntu-latest
     environment: prod
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Configure AWS (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::314119347236:role/github-actions-bus-alerts
-          aws-region: us-east-1
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Terraform Apply (prod)
-        working-directory: infra
-        run: |
-          terraform init -input=false
-          terraform workspace select prod || terraform workspace new prod
-          terraform apply -auto-approve -input=false
-YAML
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-git add .github/workflows/deploy-prod.yml
-git commit -m "ci: add promote-to-prod (manual approval)"
-git push
+      - name: Terraform Init
+        run: terraform -chdir=infra init
 
-git add .github/workflows/deploy-prod.yml
-git commit -m "ci: add promote-to-prod (manual approval)"
-git push
+      - name: Terraform Plan
+        run: terraform -chdir=infra plan
+
+      - name: Terraform Apply
+        run: terraform -chdir=infra apply -auto-approve
