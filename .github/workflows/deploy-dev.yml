@@ -22,12 +22,29 @@ jobs:
           role-to-assume: arn:aws:iam::314119347236:role/github-actions-bus-alerts
           aws-region: us-east-1
 
+      - name: Who am I (AWS & tool versions)
+        run: |
+          aws sts get-caller-identity
+          aws --version
+          terraform -version
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Terraform apply (dev)
+      - name: Terraform init & plan (dev)
         working-directory: infra
         run: |
-          terraform init -input=false
+          set -euxo pipefail
+          terraform init -input=false -upgrade
           terraform workspace select dev || terraform workspace new dev
-          terraform apply -auto-approve -input=false
+          terraform validate
+          terraform plan -no-color -out=tfplan
+
+      - name: Show plan (for debugging)
+        working-directory: infra
+        run: terraform show -no-color tfplan
+
+      - name: Terraform apply (dev)
+        working-directory: infra
+        run: terraform apply -auto-approve tfplan
+
