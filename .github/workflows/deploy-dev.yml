@@ -2,7 +2,8 @@ name: Deploy to Dev
 
 on:
   push:
-    branches: [main]
+    branches: [ "main" ]
+  workflow_dispatch: {}
 
 permissions:
   id-token: write
@@ -11,14 +12,9 @@ permissions:
 jobs:
   deploy_dev:
     runs-on: ubuntu-latest
-    # If your Terraform lives in a subfolder, set it:
-    # defaults:
-    #   run:
-    #     working-directory: infra
-
+    environment: dev
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Configure AWS (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -26,23 +22,29 @@ jobs:
           role-to-assume: arn:aws:iam::314119347236:role/github-actions-bus-alerts
           aws-region: us-east-1
 
+      # Install Terraform BEFORE any terraform commands
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-        with:
-          # terraform_version: 1.7.5   # optional: pin a version
-          # terraform_wrapper: false   # optional
 
       - name: Who am I (AWS & tool versions)
         run: |
           aws sts get-caller-identity
+          aws --version
           terraform -version
 
-      - name: Terraform init (dev)
-        run: terraform init -input=false
+      - name: Terraform init & plan (dev)
+        working-directory: infra
+        run: |
+          set -euxo pipefail
+          terraform init -input=false -upgrade
+          terraform workspace select dev || terraform workspace new dev
+          terraform validate
+          terraform plan -no-color -out=tfplan
 
-      - name: Terraform plan (dev)
-        run: terraform plan -var-file=env/dev.tfvars -out=tfplan
+      - name: Show plan (for debugging)
+        working-directory: infra
+        run: terraform show -no-color tfplan
 
       - name: Terraform apply (dev)
-        if: github.ref == 'refs/heads/main'
+        working-directory: infra
         run: terraform apply -auto-approve tfplan
