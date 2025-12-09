@@ -1,6 +1,7 @@
 cat > README.md <<'MD'
 # Bus Alerts — Serverless ETLA (Deliverables 1–4 + Docs)
 
+
 A serverless pipeline that ingests school bus breakdown/delay events via a protected HTTP API, validates/enriches them in Lambda, stores raw payloads in S3, writes transformed records to DynamoDB, and emits a custom CloudWatch metric for high-priority incidents. Alarms notify via SNS.
 
 ---
